@@ -25,3 +25,6 @@ yarn-error.log*
 # Temporary files
 *.tmp
 *.temp
+
+# Git guide (local reference only)
+GIT_GUIDE.md
