@@ -27,4 +27,4 @@ yarn-error.log*
 *.temp
 
 # Git guide (local reference only)
-GIT_GUIDE.md
+*.md

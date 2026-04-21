@@ -16,7 +16,7 @@ export default function AdminLayout({
 }) {
   return (
     <AuthProvider>
-      <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
         {/* Sidebar */}
         <Sidebar />
 
@@ -27,7 +27,9 @@ export default function AdminLayout({
 
           {/* Page Content */}
           <main className="flex-1 overflow-y-auto p-6">
-            {children}
+            <div className="mx-auto max-w-7xl">
+              {children}
+            </div>
           </main>
         </div>
       </div>

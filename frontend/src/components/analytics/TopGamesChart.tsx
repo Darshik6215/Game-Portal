@@ -2,54 +2,67 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const data = [
-  { name: 'Cyber Racer', views: 12500 },
-  { name: 'Shadow Ninja', views: 10200 },
-  { name: 'Logic Master', views: 9800 },
-  { name: 'Space Explorer', views: 8900 },
-  { name: 'Drift Hunters', views: 8500 },
-  { name: 'Tetris Classic', views: 7800 },
-  { name: 'Battle Royale', views: 7200 },
-  { name: 'Subway Surfers', views: 6900 },
-];
+interface TopGame {
+  id: string;
+  title: string;
+  views: number;
+  plays: number;
+  rating: number;
+}
+
+interface TopGamesChartProps {
+  data?: TopGame[];
+}
 
 const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#ec4899', '#14b8a6', '#f97316'];
 
-export default function TopGamesChart() {
+export default function TopGamesChart({ data }: TopGamesChartProps) {
+  // Transform data for chart
+  const chartData = data?.map(game => ({
+    name: game.title,
+    views: game.views
+  })) || [];
+
   return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm">
+    <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold">Top Games by Views</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+          Top Games by Views
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5">
           Most popular games this month
         </p>
       </div>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} layout="vertical">
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <BarChart data={chartData} layout="vertical">
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-slate-700" opacity={0.5} />
           <XAxis 
             type="number" 
-            tick={{ fontSize: 12 }}
-            stroke="#6b7280"
+            tick={{ fontSize: 12, fill: '#64748b' }}
+            stroke="#cbd5e1"
+            tickLine={false}
           />
           <YAxis 
             type="category" 
             dataKey="name" 
-            tick={{ fontSize: 12 }}
-            stroke="#6b7280"
+            tick={{ fontSize: 12, fill: '#64748b' }}
+            stroke="#cbd5e1"
             width={120}
+            tickLine={false}
           />
           <Tooltip 
             contentStyle={{
-              backgroundColor: '#fff',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
               border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '8px 12px'
+              borderRadius: '12px',
+              padding: '12px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
             }}
             formatter={(value: number) => [`${value.toLocaleString()} views`, 'Views']}
+            cursor={{ fill: 'rgba(139, 92, 246, 0.05)' }}
           />
-          <Bar dataKey="views" radius={[0, 8, 8, 0]}>
-            {data.map((entry, index) => (
+          <Bar dataKey="views" radius={[0, 12, 12, 0]}>
+            {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Bar>

@@ -2,49 +2,73 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-const data = [
-  { date: 'Jan 1', views: 4200, users: 1200 },
-  { date: 'Jan 5', views: 5100, users: 1500 },
-  { date: 'Jan 10', views: 4800, users: 1400 },
-  { date: 'Jan 15', views: 6200, users: 1800 },
-  { date: 'Jan 20', views: 7500, users: 2100 },
-  { date: 'Jan 25', views: 8900, users: 2500 },
-  { date: 'Jan 30', views: 9200, users: 2700 },
-  { date: 'Feb 5', views: 10500, users: 3000 },
-  { date: 'Feb 10', views: 11200, users: 3200 },
-  { date: 'Feb 15', views: 12400, users: 3500 },
-  { date: 'Feb 20', views: 13100, users: 3700 },
-  { date: 'Feb 25', views: 14500, users: 4000 },
-];
+interface PageView {
+  date: string;
+  views: number;
+  users: number;
+}
 
-export default function PageViewsChart() {
+interface PageViewsChartProps {
+  data?: PageView[];
+}
+
+export default function PageViewsChart({ data }: PageViewsChartProps) {
+  // Format date for display
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  // Transform data for chart
+  const chartData = data?.map(item => ({
+    date: formatDate(item.date),
+    views: item.views,
+    users: item.users
+  })) || [];
+
   return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm">
+    <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold">Page Views & Users</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+          Page Views & Users
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5">
           Daily traffic overview for the last 30 days
         </p>
       </div>
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <LineChart data={chartData}>
+          <defs>
+            <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+            </linearGradient>
+            <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-slate-700" opacity={0.5} />
           <XAxis 
             dataKey="date" 
-            tick={{ fontSize: 12 }}
-            stroke="#6b7280"
+            tick={{ fontSize: 12, fill: '#64748b' }}
+            stroke="#cbd5e1"
+            tickLine={false}
           />
           <YAxis 
-            tick={{ fontSize: 12 }}
-            stroke="#6b7280"
+            tick={{ fontSize: 12, fill: '#64748b' }}
+            stroke="#cbd5e1"
+            tickLine={false}
           />
           <Tooltip 
             contentStyle={{
-              backgroundColor: '#fff',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
               border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '8px 12px'
+              borderRadius: '12px',
+              padding: '12px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
             }}
+            cursor={{ stroke: '#8b5cf6', strokeWidth: 1, strokeDasharray: '5 5' }}
           />
           <Legend 
             wrapperStyle={{ paddingTop: '20px' }}
@@ -54,19 +78,21 @@ export default function PageViewsChart() {
             type="monotone" 
             dataKey="views" 
             stroke="#8b5cf6" 
-            strokeWidth={2}
+            strokeWidth={3}
             name="Page Views"
-            dot={{ fill: '#8b5cf6', r: 4 }}
-            activeDot={{ r: 6 }}
+            dot={{ fill: '#8b5cf6', r: 5, strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff', fill: '#8b5cf6' }}
+            fill="url(#colorViews)"
           />
           <Line 
             type="monotone" 
             dataKey="users" 
             stroke="#10b981" 
-            strokeWidth={2}
+            strokeWidth={3}
             name="Unique Users"
-            dot={{ fill: '#10b981', r: 4 }}
-            activeDot={{ r: 6 }}
+            dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff', fill: '#10b981' }}
+            fill="url(#colorUsers)"
           />
         </LineChart>
       </ResponsiveContainer>

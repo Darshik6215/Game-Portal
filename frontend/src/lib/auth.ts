@@ -1,6 +1,6 @@
 // Authentication utilities
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 const TOKEN_KEY = 'admin_token';
 const USER_KEY = 'admin_user';
 
