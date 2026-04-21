@@ -1,7 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.core.config import settings
-from app.models.user_model import Admin, Game
+from app.models.user_model import Admin
+from app.models.game_model import Game
 
 async def connect_to_mongo():
     client = AsyncIOMotorClient(settings.MONGODB_URL)

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        pre {
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Backend Connection Test</h1>
+    
+    <div class="test-box">
+        <h2>Test 1: Backend Health Check</h2>
+        <button onclick="testBackendHealth()">Test Backend</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 2: Login</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 3: Dashboard API</h2>
+        <button onclick="testDashboard()">Test Dashboard</button>
+        <div id="dashboard-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Test 4: CORS Check</h2>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+        let token = null;
+
+        async function testBackendHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}/`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Backend is running!</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Backend connection failed!</p>
+                    <p>Error: ${error.message}</p>
+                    <p><strong>Solution:</strong> Make sure backend is running on port 8080</p>
+                    <pre>cd backend
+python -m uvicorn app.main:app --reload --port 8080</pre>
+                `;
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            resultDiv.innerHTML = '<p>Testing login...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/v1/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@gamehub.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                token = data.access_token;
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Login successful!</p>
+                    <p>Token saved for dashboard test</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Login failed!</p>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testDashboard() {
+            const resultDiv = document.getElementById('dashboard-result');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">❌ Please login first (Test 2)</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Testing dashboard API...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/v1/admin/dashboard`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ Dashboard API working!</p>
+                    <p>Stats: ${data.stats.total_games} games, ${data.stats.total_views} views</p>
+                    <pre>${JSON.stringify(data.stats, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ Dashboard API failed!</p>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<p>Testing CORS...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}/`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': 'http://localhost:3000',
+                        'Access-Control-Request-Method': 'GET',
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                };
+                
+                resultDiv.innerHTML = `
+                    <p class="success">✅ CORS is configured!</p>
+                    <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ CORS test failed!</p>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Auto-run health check on load
+        window.onload = () => {
+            testBackendHealth();
+        };
+    </script>
+</body>
+</html>

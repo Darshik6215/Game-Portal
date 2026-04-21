@@ -2,68 +2,56 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
-const data = [
-  { name: 'Direct', value: 4200, percentage: 35 },
-  { name: 'Organic Search', value: 3600, percentage: 30 },
-  { name: 'Social Media', value: 2400, percentage: 20 },
-  { name: 'Referral', value: 1200, percentage: 10 },
-  { name: 'Email', value: 600, percentage: 5 },
-];
+interface TrafficSource {
+  name: string;
+  value: number;
+  percentage: number;
+}
 
-const COLORS = ['#8b5cf6', '#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+interface TrafficSourcesChartProps {
+  data?: TrafficSource[];
+}
 
-const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percentage }: any) => {
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#3b82f6', '#6b7280'];
+
+export default function TrafficSourcesChart({ data }: TrafficSourcesChartProps) {
+  const chartData = data || [];
 
   return (
-    <text 
-      x={x} 
-      y={y} 
-      fill="white" 
-      textAnchor={x > cx ? 'start' : 'end'} 
-      dominantBaseline="central"
-      fontSize={14}
-      fontWeight="bold"
-    >
-      {`${percentage}%`}
-    </text>
-  );
-};
-
-export default function TrafficSourcesChart() {
-  return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm">
+    <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold">Traffic Sources</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+          Traffic Sources
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1.5">
           Where your visitors come from
         </p>
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
-            data={data}
+            data={chartData}
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={renderCustomizedLabel}
+            label={({ name, percentage }) => `${name} (${percentage}%)`}
             outerRadius={100}
             fill="#8884d8"
             dataKey="value"
+            strokeWidth={2}
+            stroke="#fff"
           >
-            {data.map((entry, index) => (
+            {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip 
             contentStyle={{
-              backgroundColor: '#fff',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
               border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '8px 12px'
+              borderRadius: '12px',
+              padding: '12px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
             }}
             formatter={(value: number) => [`${value.toLocaleString()} visits`, 'Visits']}
           />

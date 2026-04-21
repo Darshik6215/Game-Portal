@@ -3,75 +3,58 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Star, Clock, Share2, ThumbsUp, ChevronRight } from 'lucide-react';
+import { Star, Clock, Share2, ThumbsUp, ChevronRight, TrendingUp } from 'lucide-react';
 import InArticleAd from '@/components/ads/InArticleAd';
 import SidebarAd from '@/components/ads/SidebarAd';
-
-interface Game {
-  id: number;
-  title: string;
-  slug: string;
-  description: string;
-  image: string;
-  gameUrl: string;
-  category: string;
-  rating: number;
-  players: string;
-  developer: string;
-  tags: string[];
-}
+import GamePlayer from '@/components/GamePlayer';
+import { getGameById, getRelatedGames, incrementGameViews, incrementGamePlays, type Game } from '@/lib/api';
 
 const GamePage = ({ params }: { params: { id: string } }) => {
   const [game, setGame] = useState<Game | null>(null);
   const [relatedGames, setRelatedGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/data/games.json')
-      .then(res => res.json())
-      .then((data: Game[]) => {
-        const currentGame = data.find(g => g.id === parseInt(params.id));
-        if (currentGame) {
-          setGame(currentGame);
-          
-          // Smart related games algorithm
-          // 1. Games with matching tags (highest priority)
-          // 2. Games from same category
-          // 3. Games with similar ratings
-          const related = data
-            .filter(g => g.id !== currentGame.id)
-            .map(g => {
-              let score = 0;
-              
-              // Check tag matches
-              const matchingTags = g.tags.filter(tag => currentGame.tags.includes(tag));
-              score += matchingTags.length * 3;
-              
-              // Same category bonus
-              if (g.category === currentGame.category) {
-                score += 5;
-              }
-              
-              // Similar rating bonus
-              const ratingDiff = Math.abs(g.rating - currentGame.rating);
-              if (ratingDiff < 0.3) {
-                score += 2;
-              }
-              
-              return { ...g, relevanceScore: score };
-            })
-            .sort((a, b) => b.relevanceScore - a.relevanceScore)
-            .slice(0, 4);
-          
-          setRelatedGames(related);
-        }
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error loading game:', error);
-        setLoading(false);
-      });
+    loadGame();
   }, [params.id]);
+
+  const loadGame = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch game from API
+      const gameData = await getGameById(params.id);
+      
+      if (!gameData) {
+        setError('Game not found');
+        setLoading(false);
+        return;
+      }
+      
+      setGame(gameData);
+      
+      // Increment view count
+      await incrementGameViews(params.id);
+      
+      // Fetch related games
+      const related = await getRelatedGames(gameData, 4);
+      setRelatedGames(related);
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading game:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load game');
+      setLoading(false);
+    }
+  };
+
+  const handleGamePlay = async () => {
+    if (game) {
+      await incrementGamePlays(game.id);
+    }
+  };
 
   if (loading) {
     return (
@@ -82,10 +65,11 @@ const GamePage = ({ params }: { params: { id: string } }) => {
     );
   }
 
-  if (!game) {
+  if (error || !game) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-3xl font-bold mb-4">Game Not Found</h1>
+        <p className="text-muted-foreground mb-6">{error || 'The game you are looking for does not exist.'}</p>
         <Link href="/" className="text-primary hover:underline">Return to Home</Link>
       </div>
     );
@@ -112,27 +96,12 @@ const GamePage = ({ params }: { params: { id: string } }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Game Area */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Game Window Placeholder */}
-          <div className="relative aspect-video w-full bg-slate-900 rounded-2xl overflow-hidden shadow-2xl flex flex-col items-center justify-center group">
-            <Image 
-              src={game.image} 
-              alt={game.title} 
-              fill 
-              className="object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" 
-            />
-            <div className="relative z-10 text-center px-4">
-              <a 
-                href={game.gameUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-block bg-primary text-primary-foreground p-6 rounded-full shadow-xl hover:scale-110 transition-transform mb-4"
-              >
-                <Play className="h-12 w-12 fill-current" />
-              </a>
-              <h2 className="text-3xl font-bold text-white mb-2">Click to Play</h2>
-              <p className="text-slate-300">The game will open in a new tab</p>
-            </div>
-          </div>
+          {/* Game Player - NEW: Using iframe embedding */}
+          <GamePlayer 
+            gameUrl={game.iframe_url}
+            title={game.title}
+            onPlay={handleGamePlay}
+          />
 
           {/* Game Info */}
           <div className="bg-card border rounded-2xl p-6 shadow-sm">
@@ -146,7 +115,7 @@ const GamePage = ({ params }: { params: { id: string } }) => {
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {game.players} online
+                    {game.views.toLocaleString()} views
                   </span>
                 </div>
               </div>
@@ -287,21 +256,23 @@ const GamePage = ({ params }: { params: { id: string } }) => {
 
           {/* About Developer */}
           <div className="bg-card border rounded-2xl p-6 shadow-sm">
-            <h3 className="font-bold text-lg mb-4">👨‍💻 About the Developer</h3>
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl font-bold text-primary">{game.developer.charAt(0)}</span>
+            <h3 className="font-bold text-lg mb-4">📊 Game Stats</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <p className="text-sm text-muted-foreground mb-1">Total Views</p>
+                <p className="text-2xl font-bold text-primary">{game.views.toLocaleString()}</p>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">{game.developer}</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {game.developer} is a renowned game developer known for creating engaging and high-quality {game.category.toLowerCase()} games. 
-                  With a focus on player experience and innovative gameplay, they continue to deliver exciting gaming experiences.
-                </p>
-                <div className="flex gap-2 mt-3">
-                  <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Category: {game.category}</span>
-                  <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Rating: {game.rating}⭐</span>
-                </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <p className="text-sm text-muted-foreground mb-1">Total Plays</p>
+                <p className="text-2xl font-bold text-green-600">{game.plays.toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <p className="text-sm text-muted-foreground mb-1">Rating</p>
+                <p className="text-2xl font-bold text-yellow-600">{game.rating} ⭐</p>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <p className="text-sm text-muted-foreground mb-1">Category</p>
+                <p className="text-2xl font-bold text-purple-600">{game.category}</p>
               </div>
             </div>
           </div>
@@ -325,7 +296,7 @@ const GamePage = ({ params }: { params: { id: string } }) => {
               {relatedGames.map((related) => (
                 <Link href={`/game/${related.id}`} key={related.id} className="flex gap-4 group">
                   <div className="relative h-20 w-32 flex-shrink-0 rounded-lg overflow-hidden border">
-                    <Image src={related.image} alt={related.title} fill className="object-cover group-hover:scale-110 transition-transform" />
+                    <Image src={related.thumbnail} alt={related.title} fill className="object-cover group-hover:scale-110 transition-transform" />
                   </div>
                   <div className="flex flex-col justify-center">
                     <h4 className="font-bold text-sm group-hover:text-primary transition-colors">{related.title}</h4>
@@ -356,24 +327,5 @@ const GamePage = ({ params }: { params: { id: string } }) => {
     </div>
   );
 };
-
-// Mock TrendingUp icon since it wasn't imported from lucide-react in the top but used in Sidebar
-const TrendingUp = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="24" 
-    height="24" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-    <polyline points="16 7 22 7 22 13" />
-  </svg>
-);
 
 export default GamePage;
